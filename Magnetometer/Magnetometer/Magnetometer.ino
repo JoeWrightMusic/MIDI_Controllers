@@ -11,6 +11,7 @@ Button2 button;
 
 //_______________________CONSTANTS
 #define BUTTON_PIN 5
+#define LED_PIN 17
 // #define DEBUG_GYRO
 #define DEBUG_BTN
 
