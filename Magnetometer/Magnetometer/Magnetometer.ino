@@ -19,7 +19,7 @@ Button2 button;
 #define LED_LOOP_LEN 100
 // #define DEBUG_GYRO
 // #define DEBUG_BTN
-// #define DEBUG_MODE 
+#define DEBUG_MODE 
 // #define DEBUG_SETRANGE
 // #define DEBUG_MAP
 // #define DEBUG_MIDI
