@@ -35,6 +35,7 @@ N.B - LOTS of the code here could be made more efficient!
 // debugging on/off...
 // #define DEBUG_TOUCHES;
 // #define DEBUG_GYRO;
+// #define DEBUG_RANGE;
 
 uint16_t lasttouched = 0;//last cap sensor touched
 uint16_t currtouched = 0;//current capsenseor touched
@@ -87,6 +88,7 @@ int flush = 0;
 // map mode
 int mapMode = 0;
 int mapModePre = 0;
+int cooldown = 0;
 
 // Function for sending a MIDI CC message
 void sendCC(byte control, byte value) {
@@ -248,6 +250,7 @@ void loop() {
       resetGyroMinMax();
       mapModePre=1;
     } else {
+      cooldown = 400;
       getRange();
 
       //in map mode, spit out dummy x/y/z for mapping
@@ -257,13 +260,14 @@ void loop() {
       } else if (presses[middle]==pressThreshold){
         sendCC(11, 64);
         flush=1;
-      } else if (presses[middle]==pressThreshold){
+      } else if (presses[ring]==pressThreshold){
         sendCC(12, 64);
         flush=1;
       }
     }
   } else {
     //if thumb not pressed, normal messaging... 
+    mapModePre=0;
     //check for finger presses (this code could be more efficient)...
     //index
     if(presses[index]==pressThreshold){
@@ -335,17 +339,22 @@ void loop() {
     y = (y-yMin) / (yMax-yMin) * 127;
     z = (z-zMin) / (zMax-zMin) * 127;
 
-    if(x!=xPrev){//send midicc if x has changed value
-        sendCC(10,x);
-        flush = 1;
-    }
-    if(y!=yPrev){//send midicc if y has changed value
-        sendCC(11,y);
-        flush = 1;
-    }
-    if(z!=zPrev){//send midicc if z has changed value... etc.
-        sendCC(12,z);
-        flush = 1;
+    //cooldown adds a break before sending xyz data gain from mapping mode
+    //this gives a window to map the fingers as well
+    cooldown = constrain(cooldown-1, 0, 1000);
+    if(cooldown==0){
+      if(x!=xPrev){//send midicc if x has changed value
+          sendCC(10,x);
+          flush = 1;
+      }
+      if(y!=yPrev){//send midicc if y has changed value
+          sendCC(11,y);
+          flush = 1;
+      }
+      if(z!=zPrev){//send midicc if z has changed value... etc.
+          sendCC(12,z);
+          flush = 1;
+      }
     }
 
     //Record previous xyz values
@@ -356,39 +365,53 @@ void loop() {
      //If we have midi cc to send, trigger the flush function
     if(flush){MidiUSB.flush();}
 
-
-    #ifdef DEBUG_TOUCHES
-      Serial.print("thumb");
-      Serial.print(" ");
-      Serial.print(presses[thumb]);
-      Serial.print("   ");
-      Serial.print("index");
-      Serial.print(" ");
-      Serial.print("   ");
-      Serial.print(presses[index]);
-      Serial.print("   ");
-      Serial.print("middle");
-      Serial.print(" ");
-      Serial.print(presses[middle]);
-      Serial.print("   ");
-      Serial.print("ring");
-      Serial.print(" ");
-      Serial.print(presses[ring]);
-      Serial.print("   ");
-      Serial.print("small");
-      Serial.print(" ");
-      Serial.println(presses[small]);
-    #endif
-
-    #ifdef DEBUG_GYRO
-      Serial.print(x);
-      Serial.print("   ");
-      Serial.print(y);
-      Serial.print("   ");
-      Serial.println(z);
-    #endif
-
   }
+  #ifdef DEBUG_TOUCHES
+    Serial.print("thumb");
+    Serial.print(" ");
+    Serial.print(presses[thumb]);
+    Serial.print("   ");
+    Serial.print("index");
+    Serial.print(" ");
+    Serial.print("   ");
+    Serial.print(presses[index]);
+    Serial.print("   ");
+    Serial.print("middle");
+    Serial.print(" ");
+    Serial.print(presses[middle]);
+    Serial.print("   ");
+    Serial.print("ring");
+    Serial.print(" ");
+    Serial.print(presses[ring]);
+    Serial.print("   ");
+    Serial.print("small");
+    Serial.print(" ");
+    Serial.println(presses[small]);
+  #endif
+
+  #ifdef DEBUG_GYRO
+    Serial.print(x);
+    Serial.print("   ");
+    Serial.print(y);
+    Serial.print("   ");
+    Serial.println(z);
+  #endif
+
+  #ifdef DEBUG_RANGE
+    Serial.print(xMin);
+    Serial.print("   ");
+    Serial.print(xMax);
+    Serial.print("   ");
+    Serial.print(yMin);
+    Serial.print("   ");
+    Serial.print(yMax);
+    Serial.print("   ");
+    Serial.print(zMin);
+    Serial.print("   ");
+    Serial.println(zMax);
+  #endif
+
+  // Serial.println(cooldown);
 }
 
 
